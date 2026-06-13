@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>0rt1</title>
+
+    <!-- Google Fonts — IBM Plex Mono for logo/numbers, Space Grotesk for UI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+
+    <style>
+      /* ============================================================
+           DESIGN TOKENS — change these to restyle the whole app
+           ============================================================ */
+      :root {
+        /* Backgrounds (darkest → lightest) */
+        --bg-base: #1a1a1a; /* page background */
+        --bg-surface: #212121; /* header, sidebar, cards */
+        --bg-elevated: #2a2a2a; /* inputs, result cells */
+        --bg-input: #333333; /* form inputs */
+
+        /* Accent — #1D4238 is the brand green (replaces Claude's orange) */
+        --accent: #1d4238;
+        --accent-hover: #26524a;
+        --accent-light: #3d8a70; /* lighter tint for text & borders (readability on dark) */
+        --accent-glow: rgba(29, 66, 56, 0.35);
+
+        /* Text */
+        --text-primary: #ececec;
+        --text-secondary: #a0a0a0;
+        --text-muted: #606060;
+
+        /* Borders */
+        --border: #333333;
+        --border-subtle: #262626;
+
+        /* Shape */
+        --radius: 8px;
+        --radius-sm: 5px;
+      }
+
+      /* ============================================================
+           RESET & BASE
+           ============================================================ */
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        background: var(--bg-base);
+        color: var(--text-primary);
+        font-family: "Space Grotesk", sans-serif;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      /* ============================================================
+           HEADER
+           ============================================================ */
+      header {
+        height: 54px;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border);
+        padding: 0 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 200;
+        flex-shrink: 0;
+      }
+
+      /* The logo uses monospace to echo the digit-substituted name */
+      .logo {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 1.3rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        color: var(--accent-light);
+        user-select: none;
+      }
+
+      /* "1" stays white to create a subtle two-tone split */
+      .logo .logo-end {
+        color: var(--text-primary);
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      /* Small pill badge for the version number */
+      .badge {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.68rem;
+        color: var(--text-muted);
+        background: var(--bg-elevated);
+        border: 1px solid var(--border);
+        padding: 3px 9px;
+        border-radius: 999px;
+      }
+
+      /* ============================================================
+           APP SHELL — sidebar + main area side-by-side
+           ============================================================ */
+      .app-shell {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+        height: calc(
+          100vh - 54px - 34px
+        ); /* full height minus header & statusbar */
+      }
+
+      /* ============================================================
+           SIDEBAR
+           ============================================================ */
+      .sidebar {
+        width: 210px;
+        flex-shrink: 0;
+        background: var(--bg-surface);
+        border-right: 1px solid var(--border);
+        overflow-y: auto;
+        padding: 18px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .sidebar-section-label {
+        font-size: 0.62rem;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--text-muted);
+        padding: 0 16px;
+        margin-bottom: 4px;
+      }
+
+      .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 8px 16px;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        cursor: pointer;
+        border-left: 3px solid transparent;
+        transition:
+          background 0.12s ease,
+          color 0.12s ease;
+      }
+
+      .sidebar-item:hover {
+        background: var(--bg-elevated);
+        color: var(--text-primary);
+      }
+
+      /* Active sidebar item gets the brand accent on the left border */
+      .sidebar-item.active {
+        background: var(--accent-glow);
+        color: var(--text-primary);
+        border-left-color: var(--accent-light);
+      }
+
+      /* Small circle indicator dot */
+      .nav-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+        flex-shrink: 0;
+        opacity: 0.6;
+      }
+
+      /* ============================================================
+           MAIN CONTENT
+           ============================================================ */
+      .main {
+        flex: 1;
+        overflow-y: auto;
+        padding: 30px 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+
+      /* Page heading block */
+      .page-eyebrow {
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+      }
+
+      .page-title {
+        font-size: 1.45rem;
+        font-weight: 600;
+        line-height: 1.2;
+      }
+
+      /* ============================================================
+           CARDS
+           ============================================================ */
+      .card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+
+      .card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+
+      .card-label {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .card-body {
+        padding: 20px;
+      }
+
+      /* ============================================================
+           FORM / INPUTS
+           ============================================================ */
+      .field-grid {
+        display: grid;
+        /* auto-fit fills as many 190px columns as fit, then wraps */
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 14px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .field label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-muted);
+      }
+
+      .field input,
+      .field select {
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 0.9rem;
+        padding: 9px 12px;
+        outline: none;
+        width: 100%;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
+      }
+
+      .field input:focus,
+      .field select:focus {
+        border-color: var(--accent-light);
+        box-shadow: 0 0 0 3px var(--accent-glow);
+      }
+
+      .field input::placeholder {
+        color: var(--text-muted);
+      }
+
+      .field select option {
+        background: var(--bg-elevated);
+      }
+
+      /* Row of action buttons below the form */
+      .btn-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .btn-primary {
+        background: var(--accent);
+        color: var(--text-primary);
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: 9px 22px;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        letter-spacing: 0.03em;
+        transition: background 0.15s;
+      }
+
+      .btn-primary:hover {
+        background: var(--accent-hover);
+      }
+
+      .btn-ghost {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 9px 20px;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          color 0.15s;
+      }
+
+      .btn-ghost:hover {
+        background: var(--bg-elevated);
+        color: var(--text-primary);
+      }
+
+      /* ============================================================
+           RESULTS AREA
+           ============================================================ */
+
+      /* Empty state shown before first calculation */
+      .empty-state {
+        padding: 44px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-muted);
+        text-align: center;
+      }
+
+      .empty-icon {
+        font-size: 1.6rem;
+        opacity: 0.35;
+      }
+
+      .empty-state p {
+        font-size: 0.82rem;
+      }
+
+      /* Grid of result boxes (shown after calculation) */
+      .results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+        padding: 20px;
+      }
+
+      /* Each result cell — left green border is the "signature" detail */
+      .result-cell {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent-light);
+        border-radius: var(--radius-sm);
+        padding: 14px 16px;
+      }
+
+      .result-cell-label {
+        font-size: 0.66rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+      }
+
+      .result-cell-value {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 1.35rem;
+        font-weight: 500;
+        color: var(--accent-light);
+      }
+
+      .result-cell-unit {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-top: 3px;
+      }
+
+      /* ============================================================
+           ERROR STATE (unknown CPT code)
+           ============================================================ */
+      .error-state {
+        padding: 36px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        color: #e07878;
+        text-align: center;
+      }
+
+      .error-icon {
+        font-size: 1.5rem;
+        opacity: 0.75;
+      }
+
+      .error-state p {
+        font-size: 0.83rem;
+      }
+
+      /* ============================================================
+           RESULT SUMMARY HEADER (patient + code name above cells)
+           ============================================================ */
+      .result-summary {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+
+      .result-summary-name {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .result-summary-code {
+        font-size: 0.76rem;
+        color: var(--text-muted);
+        margin-top: 3px;
+        font-family: "IBM Plex Mono", monospace;
+      }
+
+      /* ============================================================
+           STATUS BAR (bottom of the page)
+           ============================================================ */
+      .statusbar {
+        height: 34px;
+        background: var(--bg-surface);
+        border-top: 1px solid var(--border);
+        padding: 0 20px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-shrink: 0;
+      }
+
+      .status-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.68rem;
+        color: var(--text-muted);
+      }
+
+      /* Green dot = ready */
+      .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent-light);
+      }
+
+      #portfolio {
+        text-decoration: none;
+        color: #1d4238;
+      }
+
+      /* ============================================================
+           SCROLLBAR STYLING (optional polish for webkit browsers)
+           ============================================================ */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: var(--bg-base);
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ── HEADER ──────────────────────────────────────────────── -->
+    <header>
+      <div class="logo">0rt<span class="logo-end">1</span></div>
+      <div class="header-right">
+        <span class="badge">v0.1.0</span>
+      </div>
+    </header>
+
+    <!-- ── APP SHELL ────────────────────────────────────────────── -->
+    <div class="app-shell">
+      <!-- Sidebar navigation -->
+      <aside class="sidebar">
+        <div>
+          <div class="sidebar-section-label">Tools</div>
+          <div class="sidebar-item active">
+            <span class="nav-dot"></span> CPT Calculator
+          </div>
+        </div>
+        <div>
+          <div class="sidebar-section-label">History</div>
+          <div
+            class="sidebar-item"
+            style="
+              color: var(--text-muted);
+              font-size: 0.8rem;
+              font-style: italic;
+            "
+          >
+            No entries yet
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main content -->
+      <main class="main">
+        <!-- Page heading -->
+        <div>
+          <div class="page-eyebrow">0rt1 / CPT Calculator</div>
+          <h1 class="page-title">CPT Calculator</h1>
+        </div>
+
+        <!-- Input card -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-label">Inputs</span>
+          </div>
+          <div class="card-body">
+            <div class="field-grid">
+              <div class="field">
+                <label for="f1">Patient Name</label>
+                <input type="text" id="f1" placeholder="e.g. John Doe" />
+              </div>
+              <div class="field">
+                <label for="f2">CPT Code</label>
+                <input type="text" id="f2" placeholder="e.g. 99213" />
+              </div>
+            </div>
+
+            <div class="btn-row">
+              <button class="btn-primary">Calculate</button>
+              <button class="btn-ghost">Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Results card -->
+        <div class="card" id="results-card">
+          <div class="card-head">
+            <span class="card-label">Results</span>
+          </div>
+
+          <!-- Empty state (shown before first calculation) -->
+          <div class="empty-state" id="empty-state">
+            <div class="empty-icon">⬡</div>
+            <p>Enter values above and press Calculate.</p>
+          </div>
+
+          <!-- Error state (shown when CPT code is not recognised) -->
+          <div class="error-state" id="error-state" style="display: none">
+            <div class="error-icon">⚠</div>
+            <p id="error-msg">CPT code not found.</p>
+          </div>
+
+          <!-- Summary header: patient name + code description -->
+          <div class="result-summary" id="result-summary" style="display: none">
+            <div class="result-summary-name" id="result-patient"></div>
+            <div class="result-summary-code" id="result-code-desc"></div>
+          </div>
+
+          <!-- Result cells grid -->
+          <div class="results-grid" id="results-grid" style="display: none">
+            <div class="result-cell">
+              <div class="result-cell-label">Total Allowed</div>
+              <div class="result-cell-value" id="out-total">—</div>
+              <div class="result-cell-unit">visits remaining</div>
+            </div>
+            <div class="result-cell">
+              <div class="result-cell-label">Months Remaining</div>
+              <div class="result-cell-value" id="out-months">—</div>
+              <div class="result-cell-unit" id="out-year-end">thru —</div>
+            </div>
+            <div class="result-cell">
+              <div class="result-cell-label">Per Month</div>
+              <div class="result-cell-value" id="out-freq">—</div>
+              <div class="result-cell-unit">visits / month</div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+    <!-- /.app-shell -->
+
+    <!-- ── STATUS BAR ───────────────────────────────────────────── -->
+    <div class="statusbar">
+      <div class="status-pill">
+        <div class="status-dot"></div>
+        Ready
+      </div>
+      <div class="status-pill">Today: <span id="status-date">—</span></div>
+      <div class="status-pill">
+        Year-end: <span id="status-yearend">—</span>
+      </div>
+      <div class="status-pill">0rt1 v0.1.0</div>
+      <div class="status-pill">
+        Made by the head
+        <a
+          id="portfolio"
+          href="https://euripidecarpio.neocities.org/?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAZXh0bgNhZW0CMTEAc3J0YwZhcHBfaWQPOTM2NjE5NzQzMzkyNDU5AAGnm46Mwtr3KIfmHlr9hoXdelLeF4_VVNwsJlEb39VVEQya_urD7PEi0a16Bkc_aem_ZoB4YSIh6-0nVje10xS7Sw"
+          >Archon</a
+        >
+        @ Deamon Softworks
+      </div>
+    </div>
+
+    <!-- ── JAVASCRIPT ────────────────────────────────────────────── -->
+    <script>
+      // ============================================================
+      // CPT CODE LOOKUP TABLE
+      // Format: 'code': { description, freqPerMonth }
+      // ⚠ freqPerMonth values are PLACEHOLDERS (all set to 1).
+      //   Update each number to the real per-month frequency
+      //   once you have access to the spreadsheet.
+      // ============================================================
+      const CPT_CODES = {
+        // Community Health Integration (CHI)
+        G0019: {
+          description: "Community Health Integration Services",
+          freqPerMonth: 1,
+        },
+        G0022: {
+          description: "CHI Additional 30 Minutes",
+          freqPerMonth: 1,
+        },
+
+        // Principal Illness Navigation (PIN)
+        G0023: {
+          description: "Principal Illness Navigation Services",
+          freqPerMonth: 1,
+        },
+        G0024: {
+          description: "PIN Additional 30 Minutes",
+          freqPerMonth: 1,
+        },
+
+        // Office Visits
+        99203: {
+          description: "Office Visit – New Patient, Low Complexity",
+          freqPerMonth: 1,
+        },
+        99204: {
+          description: "Office Visit – New Patient, Moderate Complexity",
+          freqPerMonth: 1,
+        },
+
+        // Chronic Care Management
+        99487: {
+          description: "Complex Chronic Care Management",
+          freqPerMonth: 1,
+        },
+        99489: {
+          description: "Complex CCM – Additional 30 Minutes",
+          freqPerMonth: 1,
+        },
+        99490: {
+          description: "Chronic Care Management",
+          freqPerMonth: 1,
+        },
+
+        // Psychiatric Collaborative Care
+        99493: {
+          description: "Psychiatric Collaborative Care Management",
+          freqPerMonth: 1,
+        },
+      };
+
+      // ============================================================
+      // DATE LOGIC
+      // new Date() reads the device clock automatically.
+      // No manual updates needed — this recalculates on every page load.
+      // ============================================================
+      const today = new Date();
+      const currentMonth = today.getMonth() + 1; // getMonth() is 0-indexed (Jan=0), add 1 to get 1–12
+      const currentYear = today.getFullYear(); // e.g. 2026 → updates to 2027 automatically next year
+
+      // Remaining months = current month through December, inclusive
+      // Example: June (6)     → 12 - 6 + 1 = 7
+      // Example: January (1)  → 12 - 1 + 1 = 12
+      // Example: December (12)→ 12 - 12 + 1 = 1
+      const remainingMonths = 12 - currentMonth + 1;
+
+      // Year-end is always Dec 31 of the current year — updates automatically
+      const yearEnd = `12/31/${currentYear}`;
+      const todayFormatted = `${currentMonth}/${today.getDate()}/${currentYear}`;
+
+      // Write live dates into the status bar immediately on page load
+      document.getElementById("status-date").textContent = todayFormatted;
+      document.getElementById("status-yearend").textContent = yearEnd;
+
+      // ============================================================
+      // UI REFERENCES
+      // ============================================================
+      const calculateBtn = document.querySelector(".btn-primary");
+      const clearBtn = document.querySelector(".btn-ghost");
+      const emptyState = document.getElementById("empty-state");
+      const errorState = document.getElementById("error-state");
+      const errorMsg = document.getElementById("error-msg");
+      const resultSummary = document.getElementById("result-summary");
+      const resultsGrid = document.getElementById("results-grid");
+
+      const f1 = document.getElementById("f1"); // Patient Name
+      const f2 = document.getElementById("f2"); // CPT Code
+
+      const outTotal = document.getElementById("out-total");
+      const outMonths = document.getElementById("out-months");
+      const outYearEnd = document.getElementById("out-year-end");
+      const outFreq = document.getElementById("out-freq");
+
+      const resultPatient = document.getElementById("result-patient");
+      const resultCodeDesc = document.getElementById("result-code-desc");
+
+      // ============================================================
+      // HELPERS — switch the results card between its three states
+      // ============================================================
+      function showEmpty() {
+        emptyState.style.display = "";
+        errorState.style.display = "none";
+        resultSummary.style.display = "none";
+        resultsGrid.style.display = "none";
+      }
+
+      function showError(msg) {
+        emptyState.style.display = "none";
+        errorState.style.display = "";
+        errorMsg.textContent = msg;
+        resultSummary.style.display = "none";
+        resultsGrid.style.display = "none";
+      }
+
+      function showResults() {
+        emptyState.style.display = "none";
+        errorState.style.display = "none";
+        resultSummary.style.display = "";
+        resultsGrid.style.display = "grid";
+      }
+
+      // ============================================================
+      // CALCULATE BUTTON
+      // ============================================================
+      calculateBtn.addEventListener("click", () => {
+        const patientName = f1.value.trim();
+        const cptCode = f2.value.trim();
+
+        // Validation: both fields are required
+        if (!patientName) {
+          showError("Please enter a patient name.");
+          return;
+        }
+        if (!cptCode) {
+          showError("Please enter a CPT code.");
+          return;
+        }
+
+        // Look up the code in the table
+        const cptData = CPT_CODES[cptCode];
+        if (!cptData) {
+          showError(
+            `CPT code "${cptCode}" was not found. Double-check the code and try again.`,
+          );
+          return;
+        }
+
+        // Core formula:
+        // totalAllowed = remaining months in the year × per-month frequency for this code
+        const totalAllowed = remainingMonths * cptData.freqPerMonth;
+
+        // Populate summary header
+        resultPatient.textContent = patientName;
+        resultCodeDesc.textContent = `${cptCode} — ${cptData.description}`;
+
+        // Populate the three result cells
+        outTotal.textContent = totalAllowed;
+        outMonths.textContent = remainingMonths;
+        outYearEnd.textContent = `thru ${yearEnd}`;
+        outFreq.textContent = cptData.freqPerMonth;
+
+        showResults();
+      });
+
+      // ============================================================
+      // CLEAR BUTTON
+      // ============================================================
+      clearBtn.addEventListener("click", () => {
+        f1.value = "";
+        f2.value = "";
+        showEmpty();
+      });
+
+      // ============================================================
+      // SIDEBAR HIGHLIGHT (visual only)
+      // ============================================================
+      document.querySelectorAll(".sidebar-item").forEach((item) => {
+        item.addEventListener("click", () => {
+          document
+            .querySelectorAll(".sidebar-item")
+            .forEach((i) => i.classList.remove("active"));
+          item.classList.add("active");
+        });
+      });
+    </script>
+  </body>
+</html>
